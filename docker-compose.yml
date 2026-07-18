@@ -2,7 +2,7 @@ services:
   odysseus:
     build: .
     ports:
-      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
+      - "${APP_BIND:-0.0.0.0}:${APP_PORT:-7000}:7000"
     volumes:
       - ${APP_DATA_DIR:-./data}:/app/data:z
       - ${APP_LOGS_DIR:-./logs}:/app/logs:z
@@ -75,12 +75,18 @@ services:
         condition: service_healthy
       chromadb:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7000/api/health', timeout=5).read(1)\""]
+      interval: 10s
+      timeout: 6s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   chromadb:
     image: docker.io/chromadb/chroma:latest
     ports:
-      - "${CHROMADB_BIND:-127.0.0.1}:8110:8000"
+      - "${CHROMADB_BIND:-0.0.0.0}:8110:8000"
     volumes:
       - chromadb-data:/chroma/chroma
     environment:
@@ -108,7 +114,7 @@ services:
         fi
         exec /usr/local/searxng/entrypoint.sh
     ports:
-      - "127.0.0.1:8180:8080"
+      - "0.0.0.0:8180:8080"
     volumes:
       - searxng-data:/etc/searxng
       - ./config/searxng/settings.yml:/tmp/searxng-settings.yml.template:ro,z
@@ -141,7 +147,7 @@ services:
     image: docker.io/binwiederhier/ntfy
     command: serve
     ports:
-      - "${NTFY_BIND:-127.0.0.1}:8191:80"
+      - "${NTFY_BIND:-0.0.0.0}:8191:80"
     volumes:
       - ntfy-cache:/var/cache/ntfy
     environment:
